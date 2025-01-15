@@ -4,6 +4,8 @@ WORKDIR /app
 
 COPY . .
 
+WORKDIR /app/cmd
+
 RUN go build -o main .
 
 EXPOSE 8080

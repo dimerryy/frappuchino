@@ -22,3 +22,8 @@ services:
       - POSTGRES_DB=frappuccino
     volumes:
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U latte -d frappucino"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
