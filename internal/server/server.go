@@ -14,7 +14,7 @@ import (
 )
 
 func StartTheCafe() {
-	port := flag.Int("port", 8080, "The server port")
+	port := flag.Int("port", 8081, "The server port")
 	dir := flag.String("dir", "data", "The directory to serve")
 	help := flag.Bool("help", false, "Show help")
 	flag.Parse()
