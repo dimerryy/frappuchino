@@ -4,7 +4,7 @@ services:
   app:
     build: .
     ports:
-      - "8080:8080"
+      - "8081:8081"
     environment:
       - DB_HOST=db
       - DB_USER=latte
@@ -23,7 +23,7 @@ services:
     volumes:
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U latte -d frappucino"]
+      test: ["CMD-SHELL", "pg_isready -U latte -d frappuccino"]
       interval: 10s
       timeout: 5s
       retries: 5
