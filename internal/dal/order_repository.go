@@ -2,6 +2,8 @@ package dal
 
 import (
 	"encoding/json"
+	"fmt"
+	"hot-coffee/internal/utils"
 	"hot-coffee/models"
 	"os"
 )
@@ -9,6 +11,7 @@ import (
 const pathOrder = "data/orders.json"
 
 type OrderRepository interface {
+	SaveOrder(models.Order) error
 	SaveAll([]models.Order) error
 	GetAll() ([]models.Order, error)
 	Exists(orderID string) (bool, error)
@@ -16,6 +19,17 @@ type OrderRepository interface {
 
 type orderRepo struct {
 	path string
+}
+
+func (r *orderRepo) SaveOrder(order models.Order) error {
+	query := `INSERT INTO orders (customer_name, status, total_amount) VALUES ($1, $2, $3)`
+	res, err := utils.DB.Exec(query, order.CustomerName, order.Status, order.TotalAmount)
+	if err != nil {
+		return err
+	}
+	fmt.Println("ff")
+	fmt.Println(res.LastInsertId)
+	return nil
 }
 
 func NewOrderRepo(path string) *orderRepo {

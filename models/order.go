@@ -6,6 +6,7 @@ type Order struct {
 	Items        []OrderItem `json:"items"`
 	Status       string      `json:"status"`
 	CreatedAt    string      `json:"created_at"`
+	TotalAmount  float64     `json:"total_amount"`
 }
 
 type OrderItem struct {

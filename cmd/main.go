@@ -4,11 +4,14 @@ import (
 	"database/sql"
 	"fmt"
 	"hot-coffee/internal/server"
+	"hot-coffee/internal/utils"
 	"log"
 	"os"
 
 	_ "github.com/lib/pq"
 )
+
+var DB *sql.DB
 
 func main() {
 	db, err := CheckDb()
@@ -18,6 +21,7 @@ func main() {
 
 	defer db.Close()
 
+	utils.DB = db
 	rows, err := db.Query("SELECT order_id, customer_name, total_amount FROM orders")
 	if err != nil {
 		log.Fatalf("Failed to query database: %v", err)
@@ -39,6 +43,7 @@ func main() {
 	if err := rows.Err(); err != nil {
 		log.Fatalf("Row iteration error: %v", err)
 	}
+	DB = db
 
 	server.StartTheCafe()
 }

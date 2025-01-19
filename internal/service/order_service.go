@@ -144,9 +144,10 @@ func (s *orderService) PostNewOrder(order models.Order) error {
 		break
 	}
 
-	order.Status = "open"
+	order.Status = "active"
+	order.TotalAmount = 4.3
 	orderItems = append(orderItems, order)
-	err = s.orderRepo.SaveAll(orderItems)
+	err = s.orderRepo.SaveOrder(order)
 	if err != nil {
 		return err
 	}
