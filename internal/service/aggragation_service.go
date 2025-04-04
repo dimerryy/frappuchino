@@ -2,9 +2,11 @@ package service
 
 import (
 	"errors"
+	"fmt"
 	"hot-coffee/internal/dal"
 	"hot-coffee/models"
 	"sort"
+	"strconv"
 )
 
 type AggragationService interface {
@@ -32,15 +34,19 @@ func (s *aggragationService) GetTotalSales() (float64, error) {
 	}
 	allOrderItems, err := s.orderRepo.GetAll()
 
+	if err != nil {
+		return 0, err
+	}
 	var totalSales float64
 	for _, orderItem := range allOrderItems {
-		if orderItem.Status == "open" {
+		if orderItem.Status == "active" {
 			continue
 		}
 		for _, ingr := range orderItem.Items {
-			itemMenu := menuMap[ingr.ProductID]
+			itemMenu := menuMap[ingr.MenuItemID]
+			fmt.Println(itemMenu, ingr.MenuItemID)
 			if itemMenu.ID == "" {
-				return 0, errors.New("menu item not found: " + orderItem.ID)
+				return 0, errors.New("menu item not found: " + strconv.Itoa(orderItem.ID))
 			} else {
 				items := orderItem.Items
 				for _, item := range items {
@@ -63,7 +69,7 @@ func (s *aggragationService) GetPopularMenuItems() ([]models.OrderItem, error) {
 	for _, order := range orderItems {
 		if order.Status == "closed" {
 			for _, item := range order.Items {
-				itemCount[item.ProductID] += item.Quantity
+				itemCount[item.MenuItemID] += item.Quantity
 			}
 		}
 	}
@@ -71,8 +77,8 @@ func (s *aggragationService) GetPopularMenuItems() ([]models.OrderItem, error) {
 	var popularItems []models.OrderItem
 	for itemID, quantity := range itemCount {
 		popularItems = append(popularItems, models.OrderItem{
-			ProductID: itemID,
-			Quantity:  quantity,
+			MenuItemID: itemID,
+			Quantity:   quantity,
 		})
 	}
 

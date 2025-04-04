@@ -12,7 +12,8 @@ services:
       - DB_NAME=frappuccino
       - DB_PORT=5432
     depends_on:
-      - db
+     db:
+        condition: service_healthy
 
   db:
     image: postgres:15

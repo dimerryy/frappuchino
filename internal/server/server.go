@@ -44,6 +44,10 @@ func StartTheCafe() {
 	orderService := service.NewOrderService(orderRepo, menuRepo, inventoryRepo)
 	orderHandler := handler.NewOrderHandler(orderService)
 
+	reportRepo := dal.NewReportRepo("")
+	reportService := service.NewReportService(reportRepo)
+	reportHandler := handler.NewReportHandler(reportService)
+
 	aggService := service.NewAggragationService(orderRepo, menuRepo)
 	aggHandler := handler.NewAggragationHandler(aggService)
 	mux := http.NewServeMux()
@@ -54,6 +58,8 @@ func StartTheCafe() {
 	mux.HandleFunc("PUT /orders/{id}", orderHandler.PutOrderByID)
 	mux.HandleFunc("DELETE /orders/{id}", orderHandler.DeleteOrderByID)
 	mux.HandleFunc("POST /orders/{id}/close", orderHandler.PostCloseOrder)
+	mux.HandleFunc("GET /orders/numberOfOrderedItems", orderHandler.GetNumberOfOrderedItems)
+	mux.HandleFunc("GET /reports/search", reportHandler.GetSearchReport)
 
 	mux.HandleFunc("POST /inventory", inventoryHandler.PostItem)
 	mux.HandleFunc("GET /inventory", inventoryHandler.GetAllItem)

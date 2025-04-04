@@ -91,7 +91,7 @@ func (h *menuHandler) PutMenuHandler(w http.ResponseWriter, r *http.Request) {
 	if menuItem.ID != id {
 		RespondWithJson(w, ErrorResponse{Message: "Menu ID conflict"}, http.StatusBadRequest)
 	}
-	err = h.menuService.UpdateMenuItem(menuItem)
+	err = h.menuService.UpdateMenu(menuItem)
 	if err != nil {
 		RespondWithJson(w, ErrorResponse{Message: err.Error()}, http.StatusNotFound)
 		slog.Error("Failed to UpdateMenuItem", err.Error(), "no menu posted")

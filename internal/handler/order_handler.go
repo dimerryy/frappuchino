@@ -6,6 +6,7 @@ import (
 	"hot-coffee/models"
 	"log/slog"
 	"net/http"
+	"strconv"
 	"strings"
 )
 
@@ -16,6 +17,7 @@ type OrderHandler interface {
 	GetOrderByID(w http.ResponseWriter, r *http.Request)
 	GetAllOrders(w http.ResponseWriter, r *http.Request)
 	PostCloseOrder(w http.ResponseWriter, r *http.Request)
+	GetNumberOfOrderedItems(w http.ResponseWriter, r *http.Request)
 }
 
 type orderHandler struct {
@@ -34,13 +36,13 @@ func (h *orderHandler) PostOrder(w http.ResponseWriter, r *http.Request) {
 		slog.Error("Failed to decode", err.Error(), "no order posted")
 		return
 	}
-	err = h.orderService.PostNewOrder(newOrder)
+	err = h.orderService.PostOrUpdate(newOrder, 0)
 	if err != nil {
 		RespondWithJson(w, ErrorResponse{Message: err.Error()}, http.StatusBadRequest)
 		slog.Error("Failed to decode", err.Error(), "no order posted")
 		return
 	}
-	slog.Info("order posted", "orderID")
+	slog.Info("order posted")
 	w.WriteHeader(http.StatusCreated)
 }
 
@@ -58,15 +60,19 @@ func (h *orderHandler) PutOrderByID(w http.ResponseWriter, r *http.Request) {
 		slog.Error("Failed", err.Error(), "no order posted")
 		return
 	}
-	id := pathParam[2]
+	id, err := strconv.Atoi(pathParam[2])
+	if err != nil {
+		slog.Error("Failed", err.Error(), "no order posted")
+		return
+	}
 	orderItem, err := h.orderService.GetOrderItemById(id)
 	if err != nil {
 		RespondWithJson(w, ErrorResponse{Message: err.Error()}, http.StatusNotFound)
 		slog.Error("Failed", err.Error(), "no order posted")
 		return
 	}
-	if orderItem.Status == "open" {
-		err = h.orderService.UpdateOrder(id, newOrder)
+	if orderItem.Status == "active" {
+		err = h.orderService.PostOrUpdate(newOrder, id)
 		if err != nil {
 			if err.Error() == "not found" {
 				RespondWithJson(w, ErrorResponse{Message: "Order not found"}, http.StatusNotFound)
@@ -97,8 +103,12 @@ func (h *orderHandler) DeleteOrderByID(w http.ResponseWriter, r *http.Request) {
 		slog.Error("Failed", "wrong params", "no order posted")
 		return
 	}
-	id := pathParam[2]
-	err := h.orderService.DeleteOrder(id)
+	id, err := strconv.Atoi(pathParam[2])
+	if err != nil {
+		slog.Error("Failed", err.Error(), "no order posted")
+		return
+	}
+	err = h.orderService.DeleteOrder(id)
 	if err != nil {
 		if err.Error() == "not found" {
 			RespondWithJson(w, ErrorResponse{Message: "Order not found"}, http.StatusNotFound)
@@ -118,7 +128,11 @@ func (h *orderHandler) DeleteOrderByID(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *orderHandler) GetOrderByID(w http.ResponseWriter, r *http.Request) {
-	id := r.URL.Path[len("/orders/"):]
+	id, err := strconv.Atoi(r.URL.Path[len("/orders/"):])
+	if err != nil {
+		slog.Error("Failed", err.Error(), "no order posted")
+		return
+	}
 	orderItem, err := h.orderService.GetOrderItemById(id)
 	if err != nil {
 		RespondWithJson(w, ErrorResponse{Message: err.Error()}, http.StatusNotFound)
@@ -161,7 +175,11 @@ func (h *orderHandler) PostCloseOrder(w http.ResponseWriter, r *http.Request) {
 		slog.Error("Failed", "wrong params", "no order posted")
 		return
 	}
-	id := pathParam[2]
+	id, err := strconv.Atoi(pathParam[2])
+	if err != nil {
+		slog.Error("Failed", err.Error(), "no order posted")
+		return
+	}
 	if err := h.orderService.UpdateOrderStatus(id); err != nil {
 		if err.Error() == "order is already closed" {
 			RespondWithJson(w, ErrorResponse{Message: "Order is already closed"}, http.StatusNotFound)
@@ -173,4 +191,18 @@ func (h *orderHandler) PostCloseOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	slog.Info("order posted", "orderID", id)
+}
+
+func (h *orderHandler) GetNumberOfOrderedItems(w http.ResponseWriter, r *http.Request) {
+	startDate := r.URL.Query().Get("startDate")
+	endDate := r.URL.Query().Get("endDate")
+
+	items, err := h.orderService.GetNumberOfOrderedItems(startDate, endDate)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(items)
 }

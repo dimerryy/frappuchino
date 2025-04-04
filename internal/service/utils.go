@@ -4,6 +4,7 @@ import (
 	"errors"
 	"hot-coffee/internal/dal"
 	"hot-coffee/models"
+	"time"
 )
 
 func IsValidOrder(order models.Order, menuRepo dal.MenuRepository, inventRepo dal.InventoryRepository) error {
@@ -26,7 +27,7 @@ func IsValidOrder(order models.Order, menuRepo dal.MenuRepository, inventRepo da
 		foundMenuItem := false
 
 		for _, menuItem := range menuItems {
-			if item.ProductID == menuItem.ID {
+			if item.MenuItemID == menuItem.ID {
 				foundMenuItem = true
 				quantity := item.Quantity
 
@@ -66,9 +67,9 @@ func UpdateInventoryByOrder(inventory []models.InventoryItem, order models.Order
 
 	// Iterate through order items
 	for _, orderItem := range order.Items {
-		menuItem, exists := menuMap[orderItem.ProductID]
+		menuItem, exists := menuMap[orderItem.MenuItemID]
 		if !exists {
-			return nil, errors.New("menu item not found: " + orderItem.ProductID)
+			return nil, errors.New("menu item not found: " + orderItem.MenuItemID)
 		}
 
 		// Calculate ingredient usage based on order quantity
@@ -118,7 +119,7 @@ func IsOrderValid(order models.Order) bool {
 		return false
 	}
 	for _, item := range order.Items {
-		if item.ProductID == "" || item.Quantity <= 0 {
+		if item.MenuItemID == "" || item.Quantity <= 0 {
 			return false
 		}
 	}
@@ -130,4 +131,10 @@ func IsInventoryValid(inventory models.InventoryItem) bool {
 		return false
 	}
 	return true
+}
+
+func getFormattedTime() string {
+	currentTime := time.Now().UTC()
+
+	return currentTime.Format("2006-01-02T15:04:05Z")
 }

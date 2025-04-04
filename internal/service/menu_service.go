@@ -1,6 +1,7 @@
 package service
 
 import (
+	"database/sql"
 	"errors"
 	"hot-coffee/internal/dal"
 	"hot-coffee/models"
@@ -10,7 +11,7 @@ type MenuServiceInterface interface {
 	AddMenuItem(item models.MenuItem) error
 	GetAllMenuItems() ([]models.MenuItem, error)
 	GetMenuItemById(id string) (models.MenuItem, error)
-	UpdateMenuItem(item models.MenuItem) error
+	UpdateMenu(menu models.MenuItem) error
 	DeleteMenuItemById(id string) error
 }
 
@@ -24,25 +25,16 @@ func NewMenuService(menuRepo dal.MenuRepository) *menuService {
 
 func (s *menuService) AddMenuItem(item models.MenuItem) error {
 	if !IsMenuValid(item) {
-		return errors.New("invalid menu item")
+		return errors.New("invalid menu")
 	}
-	menuItems, err := s.menuRepo.GetAll()
+	exists, err := s.menuRepo.Exists(item.ID)
 	if err != nil {
 		return err
 	}
-	pres, err := s.menuRepo.Exists(item.ID)
-	if err != nil {
-		return err
-	}
-	if pres {
+	if exists {
 		return errors.New("menu item already exists")
 	}
-	menuItems = append(menuItems, item)
-	err = s.menuRepo.SaveAll(menuItems)
-	if err != nil {
-		return err
-	}
-	return nil
+	return s.menuRepo.SaveMenuItem(item)
 }
 
 func (s *menuService) GetAllMenuItems() ([]models.MenuItem, error) {
@@ -66,38 +58,24 @@ func (s *menuService) GetMenuItemById(id string) (models.MenuItem, error) {
 	return models.MenuItem{}, errors.New("menu item not found")
 }
 
-func (s *menuService) UpdateMenuItem(item models.MenuItem) error {
-	menuItems, err := s.menuRepo.GetAll()
+func (s *menuService) UpdateMenu(menu models.MenuItem) error {
+	exists, err := s.menuRepo.Exists(menu.ID)
 	if err != nil {
 		return err
 	}
-	if !IsMenuValid(item) {
-		return errors.New("invalid menu item")
+	if !exists {
+		return sql.ErrNoRows
 	}
-	for i := range menuItems {
-		if menuItems[i].ID == item.ID {
-			menuItems[i] = item
-			err = s.menuRepo.SaveAll(menuItems)
-			if err != nil {
-				return err
-			}
-			return nil
-		}
-	}
-	return errors.New("menu item not found")
+	return s.menuRepo.Update(menu)
 }
 
 func (s *menuService) DeleteMenuItemById(id string) error {
-	menuItems, err := s.menuRepo.GetAll()
+	exists, err := s.menuRepo.Exists(id)
 	if err != nil {
 		return err
 	}
-	for index, menuItem := range menuItems {
-		if menuItem.ID == id {
-			menuItems = append(menuItems[:index], menuItems[index+1:]...)
-			s.menuRepo.SaveAll(menuItems)
-			return nil
-		}
+	if !exists {
+		return errors.New("menu item not found")
 	}
-	return errors.New("menu item not found")
+	return s.menuRepo.DeleteMenuItem(id)
 }

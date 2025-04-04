@@ -26,39 +26,25 @@ func (s *inventoryService) AddInventoryItem(item models.InventoryItem) error {
 	if !IsInventoryValid(item) {
 		return errors.New("invalid inventory item")
 	}
-	inventories, err := s.inventoryRepo.GetAll()
-	if err != nil {
-		return errors.New("failed to get inventory items")
-	}
-
-	if b, _ := s.inventoryRepo.Exists(item); b {
+	if b, _ := s.inventoryRepo.Exists(item.IngredientID); b {
 		return errors.New("item already exists")
 	}
 
-	inventories = append(inventories, item)
+	item.CreatedAt = getFormattedTime()
+	item.UpdatedAt = getFormattedTime()
 
-	if err := s.inventoryRepo.SaveAll(inventories); err != nil {
-		return err
-	}
-
-	return nil
+	return s.inventoryRepo.AddItem(item)
 }
 
 func (s *inventoryService) DeleteInventoryItem(id string) error {
-	inventories, err := s.inventoryRepo.GetAll()
+	exists, err := s.inventoryRepo.Exists(id)
+	if !exists {
+		return errors.New("inventory item not found")
+	}
 	if err != nil {
 		return err
 	}
-
-	for i, inventory := range inventories {
-		if inventory.IngredientID == id {
-			inventories = append(inventories[:i], inventories[i+1:]...)
-		}
-	}
-	if err := s.inventoryRepo.SaveAll(inventories); err != nil {
-		return err
-	}
-	return nil
+	return s.inventoryRepo.DeleteItem(id)
 }
 
 func (s *inventoryService) GetInventoryItem() ([]models.InventoryItem, error) {
@@ -84,20 +70,13 @@ func (s *inventoryService) GetInventoryItemById(id string) (models.InventoryItem
 }
 
 func (s *inventoryService) UpdateInventoryItem(item models.InventoryItem) error {
-	inventoryItems, err := s.inventoryRepo.GetAll()
+	exists, err := s.inventoryRepo.Exists(item.IngredientID)
 	if err != nil {
-		return err
+		return nil
 	}
-	for i := range inventoryItems {
-		if inventoryItems[i].IngredientID == item.IngredientID {
-
-			inventoryItems[i].Quantity += item.Quantity
-			err = s.inventoryRepo.SaveAll(inventoryItems)
-			if err != nil {
-				return err
-			}
-			return nil
-		}
+	if !exists {
+		return errors.New("inventory item not found or you cannot change item id")
 	}
-	return errors.New("inventory item not found")
+	item.UpdatedAt = getFormattedTime()
+	return s.inventoryRepo.UpdateItem(item)
 }
