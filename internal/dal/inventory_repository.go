@@ -2,7 +2,6 @@ package dal
 
 import (
 	"encoding/json"
-
 	"os"
 
 	"hot-coffee/internal/utils"

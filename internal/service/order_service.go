@@ -102,7 +102,6 @@ func (s *orderService) PostOrUpdate(order models.Order, id int) error {
 	var totalAmount float64
 	for i := range order.Items {
 		price, err := s.menuRepo.GetMenuItemPrice(order.Items[i].MenuItemID)
-
 		if err != nil {
 			return err
 		}
