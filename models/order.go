@@ -20,7 +20,6 @@ type OrderItem struct {
 	Customization json.RawMessage `json:"customization,omitempty"`
 }
 
-
 type TotalSales struct {
 	Sales float64 `json:"total_sales: "`
 }

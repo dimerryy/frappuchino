@@ -2,6 +2,7 @@ package dal
 
 import (
 	"database/sql"
+
 	"hot-coffee/internal/utils"
 	"hot-coffee/models"
 )

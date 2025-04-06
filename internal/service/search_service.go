@@ -1,8 +1,9 @@
 package service
 
 import (
-	"hot-coffee/internal/dal"
 	"strings"
+
+	"hot-coffee/internal/dal"
 )
 
 type ReportService struct {
@@ -12,6 +13,7 @@ type ReportService struct {
 func NewReportService(repo dal.ReportRepository) *ReportService {
 	return &ReportService{Repo: repo}
 }
+
 func (s *ReportService) SearchReports(q string, filter string, minPrice, maxPrice float64) (*dal.SearchResult, error) {
 	filters := []string{"all"}
 	if filter != "" {

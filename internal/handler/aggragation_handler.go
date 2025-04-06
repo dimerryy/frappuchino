@@ -2,10 +2,11 @@ package handler
 
 import (
 	"encoding/json"
-	"hot-coffee/internal/service"
-	"hot-coffee/models"
 	"log/slog"
 	"net/http"
+
+	"hot-coffee/internal/service"
+	"hot-coffee/models"
 )
 
 type AggragationHandler interface {

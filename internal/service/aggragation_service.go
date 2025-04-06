@@ -3,10 +3,11 @@ package service
 import (
 	"errors"
 	"fmt"
-	"hot-coffee/internal/dal"
-	"hot-coffee/models"
 	"sort"
 	"strconv"
+
+	"hot-coffee/internal/dal"
+	"hot-coffee/models"
 )
 
 type AggragationService interface {
@@ -33,7 +34,6 @@ func (s *aggragationService) GetTotalSales() (float64, error) {
 		menuMap[menuItem.ID] = menuItem
 	}
 	allOrderItems, err := s.orderRepo.GetAll()
-
 	if err != nil {
 		return 0, err
 	}

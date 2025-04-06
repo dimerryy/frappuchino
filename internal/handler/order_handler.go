@@ -2,12 +2,13 @@ package handler
 
 import (
 	"encoding/json"
-	"hot-coffee/internal/service"
-	"hot-coffee/models"
 	"log/slog"
 	"net/http"
 	"strconv"
 	"strings"
+
+	"hot-coffee/internal/service"
+	"hot-coffee/models"
 )
 
 type OrderHandler interface {

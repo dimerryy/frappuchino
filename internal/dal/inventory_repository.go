@@ -3,9 +3,10 @@ package dal
 import (
 	"encoding/json"
 	"fmt"
+	"os"
+
 	"hot-coffee/internal/utils"
 	"hot-coffee/models"
-	"os"
 )
 
 type InventoryRepository interface {
@@ -79,7 +80,6 @@ func (r *inventoryRepo) GetAll() ([]models.InventoryItem, error) {
 		err := rows.Scan(&inventory.IngredientID, &inventory.Name,
 			&inventory.Quantity, &inventory.Unit,
 			&inventory.CreatedAt, &inventory.UpdatedAt)
-
 		if err != nil {
 			return nil, err
 		}

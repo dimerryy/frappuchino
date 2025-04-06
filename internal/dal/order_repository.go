@@ -5,9 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
+
 	"hot-coffee/internal/utils"
 	"hot-coffee/models"
-	"strings"
 )
 
 type OrderRepository interface {
@@ -159,7 +160,6 @@ func (r *orderRepo) UpdateOrder(order models.Order) error {
 	}
 
 	return nil
-
 }
 
 func (r *orderRepo) CloseOrder(id int) error {

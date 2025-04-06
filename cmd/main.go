@@ -3,10 +3,11 @@ package main
 import (
 	"database/sql"
 	"fmt"
-	"hot-coffee/internal/server"
-	"hot-coffee/internal/utils"
 	"log"
 	"os"
+
+	"hot-coffee/internal/server"
+	"hot-coffee/internal/utils"
 
 	_ "github.com/lib/pq"
 )
