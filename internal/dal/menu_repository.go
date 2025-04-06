@@ -135,7 +135,17 @@ func (r *menuRepo) Update(menu models.MenuItem) error {
 		return err
 	}
 	defer tx.Rollback()
-
+	var price float64
+	err = tx.QueryRow(`SELECT price FROM menu_items WHERE menu_item_id = $1`, menu.ID).Scan(&price)
+	if err != nil {
+		return err
+	}
+	if price != menu.Price {
+		_, err = tx.Exec(`INSERT INTO price_history (menu_item_id, old_price, new_price) VALUES ($1, $2, $3)`, menu.ID, price, menu.Price)
+		if err != nil {
+			return err
+		}
+	}
 	query := `
 		UPDATE menu_items 
 		SET name = $1, description = $2, price = $3 

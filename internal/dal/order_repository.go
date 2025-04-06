@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"hot-coffee/internal/utils"
 	"hot-coffee/models"
+	"strings"
 )
 
 type OrderRepository interface {
@@ -17,6 +18,8 @@ type OrderRepository interface {
 	DeleteOrder(orderID int) error
 	CloseOrder(id int) error
 	GetNumberOfOrderedItems(startDate, endDate string) (map[string]int, error)
+	GetOrdersGroupedByDay(month string) (map[string]interface{}, error)
+	GetOrdersGroupedByMonth(year string) (map[string]interface{}, error)
 }
 
 type orderRepo struct {
@@ -160,7 +163,12 @@ func (r *orderRepo) UpdateOrder(order models.Order) error {
 }
 
 func (r *orderRepo) CloseOrder(id int) error {
-	_, err := utils.DB.Exec(`UPDATE orders SET status = 'closed' WHERE order_id = $1`, id)
+	_, err := utils.DB.Exec(`INSERT INTO order_status_history (order_id, old_status, new_status) VALUES ($1, $2, $3)`, id, "active", "closed")
+	if err != nil {
+		return err
+	}
+
+	_, err = utils.DB.Exec(`UPDATE orders SET status = 'closed' WHERE order_id = $1`, id)
 	return err
 }
 
@@ -232,4 +240,75 @@ func (r *orderRepo) GetNumberOfOrderedItems(startDate, endDate string) (map[stri
 	}
 
 	return items, nil
+}
+
+func (r *orderRepo) GetOrdersGroupedByDay(month string) (map[string]interface{}, error) {
+	query := `
+        SELECT 
+    		EXTRACT(DAY FROM order_date)::int AS day, 
+    	COUNT(*) 
+		FROM orders 
+		WHERE TO_CHAR(order_date, 'FMMonth') ILIKE $1 
+		GROUP BY day 
+		ORDER BY day;`
+
+	rows, err := utils.DB.Query(query, month)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	result := map[string]interface{}{
+		"period":       "day",
+		"month":        strings.ToLower(month),
+		"orderedItems": []map[string]int{},
+	}
+
+	for rows.Next() {
+		var day int
+		var count int
+		if err := rows.Scan(&day, &count); err != nil {
+			return nil, err
+		}
+		result["orderedItems"] = append(result["orderedItems"].([]map[string]int), map[string]int{fmt.Sprintf("%d", day): count})
+	}
+
+	return result, nil
+}
+
+func (r *orderRepo) GetOrdersGroupedByMonth(year string) (map[string]interface{}, error) {
+	query := `
+        SELECT 
+    		EXTRACT(MONTH FROM order_date)::int AS month_num,
+    		TO_CHAR(order_date, 'Month') AS month_name,
+    	COUNT(*) 
+		FROM orders 
+		WHERE EXTRACT(YEAR FROM order_date)::text = $1
+		GROUP BY month_num, month_name
+		ORDER BY month_num;
+`
+
+	rows, err := utils.DB.Query(query, year)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	result := map[string]interface{}{
+		"period":       "month",
+		"year":         year,
+		"orderedItems": []map[string]int{},
+	}
+
+	for rows.Next() {
+		var monthNum int
+		var month string
+		var count int
+		if err := rows.Scan(&monthNum, &month, &count); err != nil {
+			return nil, err
+		}
+		result["orderedItems"] = append(result["orderedItems"].([]map[string]int), map[string]int{strings.TrimSpace(strings.ToLower(month)): count})
+	}
+
+	return result, nil
 }

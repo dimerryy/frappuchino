@@ -6,6 +6,7 @@ import (
 	"hot-coffee/models"
 	"log/slog"
 	"net/http"
+	"strconv"
 )
 
 type InventoryHandler interface {
@@ -14,6 +15,7 @@ type InventoryHandler interface {
 	GetItemById(w http.ResponseWriter, r *http.Request)
 	DeleteItem(w http.ResponseWriter, r *http.Request)
 	PutItem(w http.ResponseWriter, r *http.Request)
+	GetLeftovers(w http.ResponseWriter, r *http.Request)
 }
 
 type inventoryHandler struct {
@@ -110,4 +112,29 @@ func (h *inventoryHandler) PutItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	slog.Info("Inventory put", "inventoryID", inventoryItem.IngredientID)
+}
+
+func (h *inventoryHandler) GetLeftovers(w http.ResponseWriter, r *http.Request) {
+	query := r.URL.Query()
+
+	sortBy := query.Get("sortBy")
+	page, _ := strconv.Atoi(query.Get("page"))
+	pageSize, _ := strconv.Atoi(query.Get("pageSize"))
+
+	result, err := h.inventoryService.GetLeftovers(sortBy, page, pageSize)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	jsonData, err := json.MarshalIndent(result, "", "  ")
+	if err != nil {
+		RespondWithJson(w, ErrorResponse{Message: err.Error()}, http.StatusNotFound)
+		slog.Error("Failed to MarshalIndent", err.Error(), "no to get leftovers")
+		return
+	}
+	slog.Info("Inventory got", "inventoryID", result)
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(jsonData)
 }

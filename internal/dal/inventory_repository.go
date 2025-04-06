@@ -17,6 +17,7 @@ type InventoryRepository interface {
 	UpdateItem(item models.InventoryItem) error
 	CheckInventory(items []models.OrderItem) (bool, error)
 	UpdateInventory(items []models.OrderItem) error
+	GetLeftovers(sortBy string, offset, limit int) ([]models.InventoryItem, int, error)
 }
 
 type inventoryRepo struct {
@@ -99,8 +100,18 @@ func (r *inventoryRepo) Exists(id string) (bool, error) {
 }
 
 func (r *inventoryRepo) UpdateItem(item models.InventoryItem) error {
+	var quantity float64
+	err := utils.DB.QueryRow(`SELECT quantity FROM inventory WHERE ingredient_id = $1`, item.IngredientID).Scan(&quantity)
+	if err != nil {
+		return err
+	}
+	if quantity != item.Quantity {
+		query := `INSERT INTO inventory_transactions (ingredient_id, old_quantity, new_quantity, unit) VALUES ($1, $2, $3, $4)`
+		_, err = utils.DB.Exec(query, item.IngredientID, quantity, item.Quantity, item.Unit)
+		return err
+	}
 	query := `UPDATE inventory SET name = $1, quantity = $2, unit = $3, updated_at = $4 WHERE ingredient_id = $5`
-	_, err := utils.DB.Exec(query, item.Name, item.Quantity, item.Unit, item.UpdatedAt, item.IngredientID)
+	_, err = utils.DB.Exec(query, item.Name, item.Quantity, item.Unit, item.UpdatedAt, item.IngredientID)
 	return err
 }
 
@@ -174,4 +185,41 @@ func (r *inventoryRepo) UpdateInventory(items []models.OrderItem) error {
 		}
 	}
 	return nil
+}
+
+func (r *inventoryRepo) GetLeftovers(sortBy string, offset, limit int) ([]models.InventoryItem, int, error) {
+	query := `SELECT name, quantity FROM inventory`
+	countQuery := `SELECT COUNT(*) FROM inventory`
+
+	switch sortBy {
+	case "quantity":
+		query += " ORDER BY quantity DESC"
+	default:
+		query += " ORDER BY ingredient_id"
+	}
+
+	query += " OFFSET $1 LIMIT $2"
+
+	rows, err := utils.DB.Query(query, offset, limit)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer rows.Close()
+
+	var items []models.InventoryItem
+	for rows.Next() {
+		var item models.InventoryItem
+		if err := rows.Scan(&item.Name, &item.Quantity); err != nil {
+			return nil, 0, err
+		}
+		items = append(items, item)
+	}
+
+	var total int
+	err = utils.DB.QueryRow(countQuery).Scan(&total)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return items, total, nil
 }

@@ -18,6 +18,7 @@ type OrderHandler interface {
 	GetAllOrders(w http.ResponseWriter, r *http.Request)
 	PostCloseOrder(w http.ResponseWriter, r *http.Request)
 	GetNumberOfOrderedItems(w http.ResponseWriter, r *http.Request)
+	GetOrderedItemsByPeriod(w http.ResponseWriter, r *http.Request)
 }
 
 type orderHandler struct {
@@ -205,4 +206,30 @@ func (h *orderHandler) GetNumberOfOrderedItems(w http.ResponseWriter, r *http.Re
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(items)
+}
+
+func (h *orderHandler) GetOrderedItemsByPeriod(w http.ResponseWriter, r *http.Request) {
+	period := r.URL.Query().Get("period")
+	month := r.URL.Query().Get("month")
+	year := r.URL.Query().Get("year")
+
+	var result interface{}
+	var err error
+
+	switch period {
+	case "day":
+		result, err = h.orderService.GetOrdersGroupedByDay(month)
+	case "month":
+		result, err = h.orderService.GetOrdersGroupedByMonth(year)
+	default:
+		http.Error(w, "Invalid period value", http.StatusBadRequest)
+		return
+	}
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	json.NewEncoder(w).Encode(result)
 }

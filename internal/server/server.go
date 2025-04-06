@@ -60,12 +60,14 @@ func StartTheCafe() {
 	mux.HandleFunc("POST /orders/{id}/close", orderHandler.PostCloseOrder)
 	mux.HandleFunc("GET /orders/numberOfOrderedItems", orderHandler.GetNumberOfOrderedItems)
 	mux.HandleFunc("GET /reports/search", reportHandler.GetSearchReport)
+	mux.HandleFunc("GET /reports/orderedItemsByPeriod", orderHandler.GetOrderedItemsByPeriod)
 
 	mux.HandleFunc("POST /inventory", inventoryHandler.PostItem)
 	mux.HandleFunc("GET /inventory", inventoryHandler.GetAllItem)
 	mux.HandleFunc("GET /inventory/{id}", inventoryHandler.GetItemById)
 	mux.HandleFunc("PUT /inventory/{id}", inventoryHandler.PutItem)
 	mux.HandleFunc("DELETE /inventory/{id}", inventoryHandler.DeleteItem)
+	mux.HandleFunc("GET /inventory/getLeftOvers", inventoryHandler.GetLeftovers)
 
 	mux.HandleFunc("POST /menu", menuHandler.PostMenuHandler)
 	mux.HandleFunc("GET /menu", menuHandler.GetAllMenuHandler)

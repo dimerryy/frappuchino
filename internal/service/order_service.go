@@ -14,6 +14,8 @@ type OrderService interface {
 	UpdateOrderStatus(orderId int) error
 	DeleteOrder(orderID int) error
 	GetNumberOfOrderedItems(startDate, endDate string) (map[string]int, error)
+	GetOrdersGroupedByDay(month string) (map[string]interface{}, error)
+	GetOrdersGroupedByMonth(year string) (map[string]interface{}, error)
 }
 
 type orderService struct {
@@ -136,4 +138,12 @@ func (s *orderService) PostOrUpdate(order models.Order, id int) error {
 
 func (s *orderService) GetNumberOfOrderedItems(startDate, endDate string) (map[string]int, error) {
 	return s.orderRepo.GetNumberOfOrderedItems(startDate, endDate)
+}
+
+func (s *orderService) GetOrdersGroupedByDay(month string) (map[string]interface{}, error) {
+	return s.orderRepo.GetOrdersGroupedByDay(month)
+}
+
+func (s *orderService) GetOrdersGroupedByMonth(year string) (map[string]interface{}, error) {
+	return s.orderRepo.GetOrdersGroupedByMonth(year)
 }
