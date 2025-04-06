@@ -5,7 +5,8 @@
     "items": [
       {
         "product_id": "espresso",
-        "quantity": 2
+        "quantity": 2,
+        "customization": { "extra_cheese": true, "spice_level": "medium" }
       },
       {
         "product_id": "muffin",

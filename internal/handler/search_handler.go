@@ -46,7 +46,7 @@ func (h *ReportHandler) GetSearchReport(w http.ResponseWriter, r *http.Request) 
 
 	result, err := h.Service.SearchReports(query, filter, minPrice, maxPrice)
 	if err != nil {
-		http.Error(w, "Error searching reports", http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 

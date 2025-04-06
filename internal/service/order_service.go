@@ -2,7 +2,6 @@ package service
 
 import (
 	"errors"
-	"fmt"
 
 	"hot-coffee/internal/dal"
 	"hot-coffee/internal/utils"
@@ -104,7 +103,6 @@ func (s *orderService) PostOrUpdate(order models.Order, id int) error {
 	for i := range order.Items {
 		price, err := s.menuRepo.GetMenuItemPrice(order.Items[i].MenuItemID)
 
-		fmt.Println(order.Items[i].MenuItemID)
 		if err != nil {
 			return err
 		}

@@ -6,6 +6,8 @@ import (
 
 	"hot-coffee/internal/utils"
 	"hot-coffee/models"
+
+	"github.com/lib/pq"
 )
 
 type ReportRepository interface {
@@ -34,9 +36,9 @@ func (r *reportRepo) SearchReports(query string, filters []string, minPrice, max
 
 	sqlQuery := `
 		SELECT menu_item_id, name, description, price, 
-		       ts_rank_cd(to_tsvector('english', name || ' ' || description), plainto_tsquery($1)) as relevance
-		FROM menu_items
-		WHERE to_tsvector('english', name || ' ' || description) @@ plainto_tsquery($1) 
+           ts_rank_cd(to_tsvector('english', name || ' ' || description || ' ' || menu_item_id::text), plainto_tsquery($1)) as relevance
+    FROM menu_items
+    WHERE to_tsvector('english', name || ' ' || description || ' ' || menu_item_id::text) @@ plainto_tsquery($1)
 	`
 	args := []interface{}{query}
 
@@ -70,13 +72,16 @@ func (r *reportRepo) SearchReports(query string, filters []string, minPrice, max
 
 	if contains(filters, "orders") || contains(filters, "all") {
 		orderQuery := `
-			SELECT o.order_id, o.customer_name, array_agg(oi.menu_item_id), o.total_amount, 
-			       ts_rank_cd(to_tsvector('english', o.customer_name), plainto_tsquery($1)) as relevance
-			FROM orders o
-			JOIN order_items oi ON o.order_id = oi.order_id
-			WHERE to_tsvector('english', o.customer_name) @@ plainto_tsquery($1)
-			GROUP BY o.order_id ORDER BY relevance DESC;
-		`
+        SELECT o.order_id, o.customer_name, array_agg(oi.menu_item_id), o.total_amount, 
+       ts_rank_cd(to_tsvector('english', o.customer_name), plainto_tsquery($1)) as relevance
+FROM orders o
+JOIN order_items oi ON o.order_id = oi.order_id
+WHERE to_tsvector('english', o.customer_name) @@ plainto_tsquery($1)
+OR oi.menu_item_id::text LIKE '%' || $1 || '%'
+GROUP BY o.order_id
+ORDER BY relevance DESC;
+
+    `
 		orderRows, err := utils.DB.Query(orderQuery, query)
 		if err != nil {
 			return nil, err
@@ -85,7 +90,7 @@ func (r *reportRepo) SearchReports(query string, filters []string, minPrice, max
 
 		for orderRows.Next() {
 			var order models.OrderSearchResult
-			var items []string
+			var items pq.StringArray
 			err := orderRows.Scan(&order.ID, &order.CustomerName, &items, &order.Total, &order.Relevance)
 			if err != nil {
 				return nil, err

@@ -2,7 +2,7 @@ package dal
 
 import (
 	"encoding/json"
-	"fmt"
+
 	"os"
 
 	"hot-coffee/internal/utils"
@@ -108,8 +108,11 @@ func (r *inventoryRepo) UpdateItem(item models.InventoryItem) error {
 	if quantity != item.Quantity {
 		query := `INSERT INTO inventory_transactions (ingredient_id, old_quantity, new_quantity, unit) VALUES ($1, $2, $3, $4)`
 		_, err = utils.DB.Exec(query, item.IngredientID, quantity, item.Quantity, item.Unit)
-		return err
+		if err != nil {
+			return err
+		}
 	}
+
 	query := `UPDATE inventory SET name = $1, quantity = $2, unit = $3, updated_at = $4 WHERE ingredient_id = $5`
 	_, err = utils.DB.Exec(query, item.Name, item.Quantity, item.Unit, item.UpdatedAt, item.IngredientID)
 	return err
@@ -133,13 +136,11 @@ func (r *inventoryRepo) CheckInventory(items []models.OrderItem) (bool, error) {
 			var ingredientID string
 			var requiredQuantity, availableQuantity float64
 			err = rows.Scan(&ingredientID, &requiredQuantity, &availableQuantity)
-			fmt.Println(ingredientID, requiredQuantity, availableQuantity)
 			if err != nil {
 				return false, err
 			}
 
 			totalRequired := requiredQuantity * float64(item.Quantity)
-			fmt.Println(totalRequired, availableQuantity)
 			if totalRequired > availableQuantity {
 				return false, nil
 			}

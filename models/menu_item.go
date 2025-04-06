@@ -1,7 +1,7 @@
 package models
 
 type MenuItem struct {
-	ID          string               `json:"product_id"`
+	ID          string               `json:"menu_item_id"`
 	Name        string               `json:"name"`
 	Description string               `json:"description"`
 	Price       float64              `json:"price"`
