@@ -12,7 +12,7 @@ import (
 )
 
 type OrderRepository interface {
-	SaveOrder(models.Order) (int, error) 
+	SaveOrder(models.Order) (int, error)
 	GetAll() ([]models.Order, error)
 	OrderExists(orderID int) (bool, error)
 	UpdateOrder(order models.Order) error
