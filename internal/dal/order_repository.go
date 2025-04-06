@@ -12,7 +12,7 @@ import (
 )
 
 type OrderRepository interface {
-	SaveOrder(models.Order) error
+	SaveOrder(models.Order) (int, error) 
 	GetAll() ([]models.Order, error)
 	OrderExists(orderID int) (bool, error)
 	UpdateOrder(order models.Order) error
@@ -27,13 +27,13 @@ type orderRepo struct {
 	path string
 }
 
-func (r *orderRepo) SaveOrder(order models.Order) error {
+func (r *orderRepo) SaveOrder(order models.Order) (int, error) {
 	query := `INSERT INTO orders (customer_name, status,order_date,last_status_change, total_amount, updated_at) 
 			  VALUES ($1, $2, $3, $4, $5, $6) RETURNING order_id`
 	var orderID int
 	err := utils.DB.QueryRow(query, order.CustomerName, order.Status, order.CreatedAt, order.CreatedAt, order.TotalAmount, order.UpdatedAt).Scan(&orderID)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	for _, item := range order.Items {
@@ -42,11 +42,11 @@ func (r *orderRepo) SaveOrder(order models.Order) error {
 
 		_, err := utils.DB.Exec(query, orderID, item.MenuItemID, item.Quantity, item.Price, string(item.Customization))
 		if err != nil {
-			return err
+			return 0, err
 		}
 	}
 
-	return nil
+	return orderID, err
 }
 
 func NewOrderRepo(path string) *orderRepo {

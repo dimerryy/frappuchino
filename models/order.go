@@ -14,7 +14,7 @@ type Order struct {
 }
 
 type OrderItem struct {
-	MenuItemID    string          `json:"product_id"`
+	MenuItemID    string          `json:"menu_item_id"`
 	Quantity      int             `json:"quantity"`
 	Price         float64         `json:"-"`
 	Customization json.RawMessage `json:"customization,omitempty"`
@@ -37,4 +37,36 @@ type OrderSearchResult struct {
 	Total        float64  `json:"total_amount"`
 	Items        []string `json:"items"`
 	Relevance    float64  `json:"relevance"`
+}
+
+type BatchOrderRequest struct {
+	Orders []Order `json:"orders"`
+}
+
+type BatchOrderResponse struct {
+	ProcessedOrders []ProcessedOrder `json:"processed_orders"`
+	Summary         BatchSummary     `json:"summary"`
+}
+
+type ProcessedOrder struct {
+	OrderID      int     `json:"order_id,omitempty"`
+	CustomerName string  `json:"customer_name"`
+	Status       string  `json:"status"` // accepted or rejected
+	Total        float64 `json:"total,omitempty"`
+	Reason       string  `json:"reason,omitempty"`
+}
+
+type BatchSummary struct {
+	TotalOrders      int              `json:"total_orders"`
+	Accepted         int              `json:"accepted"`
+	Rejected         int              `json:"rejected"`
+	TotalRevenue     float64          `json:"total_revenue"`
+	InventoryUpdates []InventoryUsage `json:"inventory_updates,omitempty"`
+}
+
+type InventoryUsage struct {
+	IngredientID int    `json:"ingredient_id"`
+	Name         string `json:"name"`
+	QuantityUsed int    `json:"quantity_used"`
+	Remaining    int    `json:"remaining"`
 }

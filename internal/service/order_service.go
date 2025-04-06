@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"hot-coffee/internal/dal"
+	"hot-coffee/internal/utils"
 	"hot-coffee/models"
 )
 
@@ -17,6 +18,7 @@ type OrderService interface {
 	GetNumberOfOrderedItems(startDate, endDate string) (map[string]int, error)
 	GetOrdersGroupedByDay(month string) (map[string]interface{}, error)
 	GetOrdersGroupedByMonth(year string) (map[string]interface{}, error)
+	ProcessBatchOrders(orders []models.Order) (*models.BatchOrderResponse, error)
 }
 
 type orderService struct {
@@ -97,9 +99,7 @@ func (s *orderService) PostOrUpdate(order models.Order, id int) error {
 	if err != nil {
 		return err
 	}
-	if err != nil {
-		return err
-	}
+
 	var totalAmount float64
 	for i := range order.Items {
 		price, err := s.menuRepo.GetMenuItemPrice(order.Items[i].MenuItemID)
@@ -120,7 +120,8 @@ func (s *orderService) PostOrUpdate(order models.Order, id int) error {
 		order.UpdatedAt = now
 		order.TotalAmount = totalAmount
 		order.Status = "active"
-		return s.orderRepo.SaveOrder(order)
+		_, err = s.orderRepo.SaveOrder(order)
+		return err
 	} else {
 		exists, err := s.orderRepo.OrderExists(order.ID)
 		if err != nil {
@@ -147,4 +148,59 @@ func (s *orderService) GetOrdersGroupedByDay(month string) (map[string]interface
 
 func (s *orderService) GetOrdersGroupedByMonth(year string) (map[string]interface{}, error) {
 	return s.orderRepo.GetOrdersGroupedByMonth(year)
+}
+
+func (s *orderService) ProcessBatchOrders(orders []models.Order) (*models.BatchOrderResponse, error) {
+	var response models.BatchOrderResponse
+	tx, err := utils.DB.Begin()
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	for _, order := range orders {
+		ok, err := s.inventoryRepo.CheckInventory(order.Items)
+		if err != nil {
+			return nil, err
+		}
+
+		if !ok {
+			response.ProcessedOrders = append(response.ProcessedOrders, models.ProcessedOrder{
+				OrderID:      0,
+				CustomerName: order.CustomerName,
+				Status:       "rejected",
+				Reason:       "insufficient_inventory",
+			})
+			response.Summary.Rejected++
+			continue
+		}
+
+		err = s.PostOrUpdate(order, 0)
+		if err != nil {
+			return nil, err
+		}
+
+		var orderID int
+		var total float64
+		err = utils.DB.QueryRow(`SELECT order_id, total_amount
+									FROM orders WHERE customer_name = $1;`, order.CustomerName).Scan(&orderID, &total)
+		if err != nil {
+			return nil, err
+		}
+		response.ProcessedOrders = append(response.ProcessedOrders, models.ProcessedOrder{
+			OrderID:      orderID,
+			CustomerName: order.CustomerName,
+			Status:       "accepted",
+			Total:        total,
+		})
+		response.Summary.Accepted++
+		response.Summary.TotalRevenue += total
+	}
+
+	response.Summary.TotalOrders = len(orders)
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+
+	return &response, nil
 }

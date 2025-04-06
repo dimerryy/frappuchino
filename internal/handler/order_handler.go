@@ -20,6 +20,7 @@ type OrderHandler interface {
 	PostCloseOrder(w http.ResponseWriter, r *http.Request)
 	GetNumberOfOrderedItems(w http.ResponseWriter, r *http.Request)
 	GetOrderedItemsByPeriod(w http.ResponseWriter, r *http.Request)
+	BatchProcessOrders(w http.ResponseWriter, r *http.Request)
 }
 
 type orderHandler struct {
@@ -206,7 +207,12 @@ func (h *orderHandler) GetNumberOfOrderedItems(w http.ResponseWriter, r *http.Re
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(items)
+	err = setBodyToJson(w, items)
+	if err != nil {
+		RespondWithJson(w, ErrorResponse{Message: err.Error()}, http.StatusInternalServerError)
+		slog.Error("Failed", err.Error(), "no report posted")
+		return
+	}
 }
 
 func (h *orderHandler) GetOrderedItemsByPeriod(w http.ResponseWriter, r *http.Request) {
@@ -232,5 +238,32 @@ func (h *orderHandler) GetOrderedItemsByPeriod(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	json.NewEncoder(w).Encode(result)
+	err = setBodyToJson(w, result)
+	if err != nil {
+		RespondWithJson(w, ErrorResponse{Message: err.Error()}, http.StatusInternalServerError)
+		slog.Error("Failed", err.Error(), "no report posted")
+		return
+	}
+}
+
+func (h *orderHandler) BatchProcessOrders(w http.ResponseWriter, r *http.Request) {
+	var req models.BatchOrderRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request", http.StatusBadRequest)
+		return
+	}
+
+	resp, err := h.orderService.ProcessBatchOrders(req.Orders)
+	if err != nil {
+		RespondWithJson(w, ErrorResponse{Message: err.Error()}, http.StatusInternalServerError)
+		slog.Error("Failed", err.Error(), "no order posted")
+		return
+	}
+
+	err = setBodyToJson(w, resp)
+	if err != nil {
+		RespondWithJson(w, ErrorResponse{Message: err.Error()}, http.StatusInternalServerError)
+		slog.Error("Failed", err.Error(), "no order posted")
+		return
+	}
 }
