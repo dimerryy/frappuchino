@@ -122,6 +122,4 @@ type BatchOrderRequest struct {
 - Use [Postman](https://www.postman.com/) to test endpoints with JSON payloads.
 - Ensure the `init.sql` runs inside the Docker container to initialize your database schema.
 
-## License
 
-MIT
